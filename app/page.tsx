@@ -5,6 +5,7 @@ import { PlusIcon, PencilIcon, TrashIcon, PlusCircleIcon, SunIcon, MoonIcon, Mag
 import toast from 'react-hot-toast';
 import { useTheme } from './components/ThemeProvider';
 import Link from 'next/link';
+import React from 'react';
 
 interface Product {
   _id: string;
@@ -418,7 +419,7 @@ export default function Home() {
                       <label className="label">Box Unit</label>
                       <select
                         value={formData.boxUnit}
-                        onChange={(e) => setFormData({ ...formData, boxUnit: e.target.value as Product['boxUnit'] })}
+                        onChange={(e) => setFormData({ ...formData, boxUnit: e.target.value || 'unidade' })}
                         className="input-field"
                       >
                         <option value="unidade">Unidade</option>
