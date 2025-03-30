@@ -5,6 +5,7 @@ import { SunIcon, MoonIcon, ArrowLeftIcon, ArrowUpIcon, ArrowDownIcon } from '@h
 import { useTheme } from '../components/ThemeProvider';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import React from 'react';
 
 interface Product {
   _id: string;

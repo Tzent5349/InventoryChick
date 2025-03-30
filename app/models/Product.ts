@@ -14,7 +14,9 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     validate: {
-      validator: function(this: { unit: string }) {
+      validator: function(this: {
+        quantityPerBox: number; unit: string 
+}) {
         return this.unit !== 'cx' || this.quantityPerBox > 0;
       },
       message: 'Quantity per box is required when unit is "cx"'
