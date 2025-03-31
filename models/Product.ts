@@ -1,20 +1,32 @@
 import mongoose from 'mongoose';
 
-const ProductSchema = new mongoose.Schema({
+const productSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, 'Please provide a product name'],
+    required: true,
   },
   unit: {
     type: String,
-    required: [true, 'Please provide a unit'],
-    enum: ['cx', 'unidade', 'kg'],
+    enum: ['cx', 'unidade', 'kg', 'l', 'barril', 'packet'],
+    required: true,
   },
   quantityPerBox: {
     type: Number,
-    required: function(this: { unit: string }) {
-      return this.unit === 'cx';
-    },
+    default: 0,
+  },
+  boxUnit: {
+    type: String,
+    enum: ['unidade', 'kg', 'l'],
+    default: 'unidade',
+  },
+  packetQuantity: {
+    type: Number,
+    default: 0,
+  },
+  packetUnit: {
+    type: String,
+    enum: ['unidade', 'kg', 'l'],
+    default: 'unidade',
   },
   currentQuantity: {
     type: Number,
@@ -22,16 +34,18 @@ const ProductSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: [true, 'Please provide a category'],
+    required: true,
   },
   location: {
     type: String,
-    required: [true, 'Please provide a location'],
+    required: true,
   },
-  createdAt: {
+  lastUpdated: {
     type: Date,
     default: Date.now,
   },
 });
 
-export default mongoose.models.Product || mongoose.model('Product', ProductSchema); 
+const Product = mongoose.models.Product || mongoose.model('Product', productSchema);
+
+export default Product; 

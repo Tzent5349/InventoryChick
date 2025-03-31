@@ -7,7 +7,7 @@ const productSchema = new mongoose.Schema({
   },
   unit: {
     type: String,
-    enum: ['cx', 'unidade', 'kg', 'l', 'barril'],
+    enum: ['cx', 'unidade', 'kg', 'l', 'barril', 'packet'],
     default: 'unidade',
   },
   quantityPerBox: {
@@ -23,6 +23,23 @@ const productSchema = new mongoose.Schema({
     }
   },
   boxUnit: {
+    type: String,
+    enum: ['unidade', 'kg', 'l'],
+    default: 'unidade',
+  },
+  packetQuantity: {
+    type: Number,
+    default: 0,
+    validate: {
+      validator: function(this: {
+        packetQuantity: number; unit: string 
+}) {
+        return this.unit !== 'packet' || this.packetQuantity > 0;
+      },
+      message: 'Quantity per packet is required when unit is "packet"'
+    }
+  },
+  packetUnit: {
     type: String,
     enum: ['unidade', 'kg', 'l'],
     default: 'unidade',

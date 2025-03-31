@@ -44,9 +44,10 @@ export async function POST(request: Request) {
 export async function PUT(request: Request) {
   try {
     await connectDB();
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
     const data = await request.json();
-    const { id, ...updateData } = data;
-    
+
     if (!id) {
       return NextResponse.json(
         { error: 'Product ID is required' },
@@ -54,18 +55,27 @@ export async function PUT(request: Request) {
       );
     }
 
-    const product = await Product.findByIdAndUpdate(id, updateData, { new: true });
+    const product = await Product.findById(id);
     if (!product) {
       return NextResponse.json(
         { error: 'Product not found' },
         { status: 404 }
       );
     }
+
+    // Update only the fields that are provided
+    Object.keys(data).forEach(key => {
+      if (data[key] !== undefined) {
+        product[key] = data[key];
+      }
+    });
+
+    await product.save();
     return NextResponse.json(product);
   } catch (error) {
-    console.error('PUT /api/products error:', error);
+    console.error('Error updating product:', error);
     return NextResponse.json(
-      { error: 'Failed to update product', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to update product' },
       { status: 500 }
     );
   }

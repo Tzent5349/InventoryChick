@@ -10,6 +10,7 @@ import React from 'react';
 interface Inventory {
   _id: string;
   name: string;
+  storeName: string;
   date: string;
   description?: string;
   products: {
@@ -30,13 +31,23 @@ export default function Inventories() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
+    storeName: '',
     date: new Date().toISOString().slice(0, 10),
     description: '',
   });
+  const [stores, setStores] = useState<string[]>([]);
+  const [isNewStoreInput, setIsNewStoreInput] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
 
   useEffect(() => {
     fetchInventories();
   }, []);
+
+  useEffect(() => {
+    // Extract unique stores from inventories
+    const uniqueStores = Array.from(new Set(inventories.map(inventory => inventory.storeName)));
+    setStores(uniqueStores);
+  }, [inventories]);
 
   const fetchInventories = async () => {
     try {
@@ -58,7 +69,7 @@ export default function Inventories() {
       });
       toast.success('Inventory created successfully');
       setIsFormOpen(false);
-      setFormData({ name: '', date: new Date().toISOString().slice(0, 10), description: '' });
+      setFormData({ name: '', storeName: '', date: new Date().toISOString().slice(0, 10), description: '' });
       fetchInventories();
     } catch (error) {
       toast.error('Failed to create inventory');
@@ -74,6 +85,16 @@ export default function Inventories() {
       } catch (error) {
         toast.error('Failed to delete inventory');
       }
+    }
+  };
+
+  const handleNewStoreSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newStoreName.trim()) {
+      setStores(prev => [...prev, newStoreName.trim()]);
+      setFormData(prev => ({ ...prev, storeName: newStoreName.trim() }));
+      setIsNewStoreInput(false);
+      setNewStoreName('');
     }
   };
 
@@ -126,6 +147,57 @@ export default function Inventories() {
                   />
                 </div>
                 <div>
+                  <label className="label">Store Name *</label>
+                  {isNewStoreInput ? (
+                    <form onSubmit={handleNewStoreSubmit} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={newStoreName}
+                        onChange={(e) => setNewStoreName(e.target.value)}
+                        className="input-field flex-1"
+                        placeholder="Enter new store name"
+                        required
+                      />
+                      <button
+                        type="submit"
+                        className="button-primary"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsNewStoreInput(false)}
+                        className="button-secondary"
+                      >
+                        Cancel
+                      </button>
+                    </form>
+                  ) : (
+                    <div className="flex gap-2">
+                      <select
+                        value={formData.storeName}
+                        onChange={(e) => setFormData({ ...formData, storeName: e.target.value })}
+                        className="input-field flex-1"
+                        required
+                      >
+                        <option value="">Select a store</option>
+                        {stores.map((store) => (
+                          <option key={store} value={store}>
+                            {store}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        type="button"
+                        onClick={() => setIsNewStoreInput(true)}
+                        className="button-secondary"
+                      >
+                        New Store
+                      </button>
+                    </div>
+                  )}
+                </div>
+                <div>
                   <label className="label">Date *</label>
                   <input
                     type="date"
@@ -149,7 +221,7 @@ export default function Inventories() {
                     type="button"
                     onClick={() => {
                       setIsFormOpen(false);
-                      setFormData({ name: '', date: new Date().toISOString().slice(0, 10), description: '' });
+                      setFormData({ name: '', storeName: '', date: new Date().toISOString().slice(0, 10), description: '' });
                     }}
                     className="button-secondary"
                   >
