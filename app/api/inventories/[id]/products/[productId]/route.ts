@@ -2,6 +2,7 @@ import Inventory from '@/app/models/Inventory';
 import connectDB from '@/lib/mongodb';
 import { NextResponse } from 'next/server';
 import { Product } from '@/app/models/Product';
+import { NextRequest } from 'next/server';
 
 interface InventoryProduct {
   productId: {
@@ -12,7 +13,7 @@ interface InventoryProduct {
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string; productId: string } }
 ) {
   try {
