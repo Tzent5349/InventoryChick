@@ -12,21 +12,14 @@ interface InventoryProduct {
   notes?: string;
 }
 
-type RouteContext = {
-  params: {
-    id: string;
-    productId: string;
-  };
-};
-
 export async function PUT(
   request: NextRequest,
-  context: RouteContext
+  { params }: { params: { id: string; productId: string } }
 ) {
   try {
     await connectDB();
     const { quantity, notes, action } = await request.json();
-    const { id, productId } = context.params;
+    const { id, productId } = params;
 
     if (quantity < 0) {
       return NextResponse.json(
