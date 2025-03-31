@@ -20,52 +20,47 @@ interface Product {
   lastUpdated?: Date;
 }
 
+interface Inventory {
+  _id: string;
+  name: string;
+  storeName: string;
+  date: string;
+  description?: string;
+  products: {
+    productId: Product;
+    quantity: number;
+    notes?: string;
+  }[];
+}
+
 type SortField = 'name' | 'category' | 'location' | 'quantity';
 type SortOrder = 'asc' | 'desc';
 
 export default function Home() {
   const { theme, toggleTheme } = useTheme();
   const [products, setProducts] = useState<Product[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isQuantityFormOpen, setIsQuantityFormOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
-  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
-  const [selectedStore, setSelectedStore] = useState<string>('all');
-  const [stores, setStores] = useState<string[]>([]);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState('');
-  const [formData, setFormData] = useState({
+  const [inventories, setInventories] = useState<Inventory[]>([]);
+  const [isInventoryFormOpen, setIsInventoryFormOpen] = useState(true);
+  const [selectedInventory, setSelectedInventory] = useState<Inventory | null>(null);
+  const [inventoryFormData, setInventoryFormData] = useState({
     name: '',
-    unit: 'unidade',
-    quantityPerBox: 0,
-    boxUnit: 'unidade',
-    category: '',
-    location: '',
     storeName: '',
+    date: new Date().toISOString().slice(0, 10),
+    description: '',
   });
-  const [quantityData, setQuantityData] = useState({
-    quantity: 0,
-  });
-  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
-  const [quickAddData, setQuickAddData] = useState({
-    boxes: 0,
-    units: 0,
-  });
+  const [stores, setStores] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortField, setSortField] = useState<SortField>('name');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
 
   useEffect(() => {
     fetchProducts();
+    fetchInventories();
   }, []);
 
   useEffect(() => {
-    // Extract unique categories and stores from products
-    const uniqueCategories = Array.from(new Set(products.map(product => product.category)));
+    // Extract unique stores from products
     const uniqueStores = Array.from(new Set(products.map(product => product.storeName || 'Uncategorized')));
-    setCategories(uniqueCategories);
     setStores(uniqueStores);
   }, [products]);
 
@@ -79,134 +74,53 @@ export default function Home() {
     }
   };
 
-  const handleAddCategory = () => {
-    if (newCategory.trim()) {
-      setCategories([...categories, newCategory.trim()]);
-      setFormData({ ...formData, category: newCategory.trim() });
-      setNewCategory('');
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const fetchInventories = async () => {
     try {
-      if (editingProduct) {
-        await fetch('/api/products', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingProduct._id, ...formData }),
-        });
-        toast.success('Product updated successfully');
-      } else {
-        await fetch('/api/products', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData),
-        });
-        toast.success('Product added successfully');
-      }
-      setIsFormOpen(false);
-      setEditingProduct(null);
-      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '', storeName: '' });
-      fetchProducts();
+      const response = await fetch('/api/inventories');
+      const data = await response.json();
+      setInventories(data);
     } catch (error) {
-      toast.error('Failed to save product');
+      toast.error('Failed to fetch inventories');
     }
   };
 
-  const handleQuantitySubmit = async (e: React.FormEvent) => {
+  const handleInventorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProduct) return;
-
     try {
-      const newQuantity = selectedProduct.currentQuantity + quantityData.quantity;
-      await fetch('/api/products', {
-        method: 'PUT',
+      const response = await fetch('/api/inventories', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedProduct._id,
-          currentQuantity: newQuantity,
-        }),
+        body: JSON.stringify(inventoryFormData),
       });
-      toast.success('Quantity updated successfully');
-      setIsQuantityFormOpen(false);
-      setSelectedProduct(null);
-      setQuantityData({ quantity: 0 });
-      fetchProducts();
+      const data = await response.json();
+      setSelectedInventory(data);
+      setIsInventoryFormOpen(false);
+      toast.success('Inventory created successfully');
+      fetchInventories();
     } catch (error) {
-      toast.error('Failed to update quantity');
+      toast.error('Failed to create inventory');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this product?')) {
-      try {
-        await fetch(`/api/products?id=${id}`, { method: 'DELETE' });
-        toast.success('Product deleted successfully');
-        fetchProducts();
-      } catch (error) {
-        toast.error('Failed to delete product');
-      }
-    }
-  };
-
-  const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setFormData({
-      name: product.name,
-      unit: product.unit,
-      quantityPerBox: product.quantityPerBox || 0,
-      boxUnit: product.boxUnit || 'unidade',
-      category: product.category,
-      location: product.location,
-      storeName: product.storeName || '',
-    });
-    setIsFormOpen(true);
-  };
-
-  const handleAddQuantity = (product: Product) => {
-    setSelectedProduct(product);
-    setIsQuantityFormOpen(true);
-  };
-
-  const handleQuickAdd = async (product: Product) => {
-    setSelectedProduct(product);
-    setIsQuickAddOpen(true);
-  };
-
-  const handleQuickAddSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedProduct) return;
+  const handleAddProductToInventory = async (product: Product, quantity: number) => {
+    if (!selectedInventory) return;
 
     try {
-      let totalQuantity = 0;
-      
-      if (selectedProduct.unit === 'cx' && selectedProduct.quantityPerBox) {
-        // If it's a box product, calculate total units
-        totalQuantity = (quickAddData.boxes * selectedProduct.quantityPerBox) + quickAddData.units;
-      } else {
-        // If it's a unit product, just add the units
-        totalQuantity = quickAddData.units;
-      }
-
-      const newQuantity = selectedProduct.currentQuantity + totalQuantity;
-      
-      await fetch('/api/products', {
-        method: 'PUT',
+      const response = await fetch(`/api/inventories/${selectedInventory._id}/products`, {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: selectedProduct._id,
-          currentQuantity: newQuantity,
+          productId: product._id,
+          quantity,
         }),
       });
 
-      toast.success('Quantity updated successfully');
-      setIsQuickAddOpen(false);
-      setSelectedProduct(null);
-      setQuickAddData({ boxes: 0, units: 0 });
-      fetchProducts();
+      if (!response.ok) throw new Error('Failed to add product');
+
+      toast.success('Product added to inventory');
+      fetchInventories();
     } catch (error) {
-      toast.error('Failed to update quantity');
+      toast.error('Failed to add product to inventory');
     }
   };
 
@@ -220,13 +134,6 @@ export default function Home() {
   };
 
   const filteredProducts = products
-    .filter(product => selectedCategory === 'all' || product.category === selectedCategory)
-    .filter(product => selectedStore === 'all' || product.storeName === selectedStore)
-    .filter(product => {
-      if (!product.lastUpdated) return true;
-      const productMonth = new Date(product.lastUpdated).toISOString().slice(0, 7);
-      return productMonth === selectedMonth;
-    })
     .filter(product => 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -276,349 +183,66 @@ export default function Home() {
                 <SunIcon className="w-6 h-6" />
               )}
             </button>
-            <button
-              onClick={() => setIsFormOpen(true)}
-              className="button-primary flex items-center"
-            >
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Add Product
-            </button>
           </div>
         </div>
 
-        <div className="mb-6 space-y-4">
-          <div className="relative">
-            <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
-          <div className="flex flex-wrap gap-4">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="input-field max-w-xs"
-            >
-              <option value="all">All Categories</option>
-              {categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
-                </option>
-              ))}
-            </select>
-            <select
-              value={selectedStore}
-              onChange={(e) => setSelectedStore(e.target.value)}
-              className="input-field max-w-xs"
-            >
-              <option value="all">All Stores</option>
-              {stores.map((store) => (
-                <option key={store} value={store}>
-                  {store}
-                </option>
-              ))}
-            </select>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="input-field max-w-xs"
-            />
-            <button
-              onClick={() => {
-                setSelectedCategory('all');
-                setSelectedStore('all');
-                setSelectedMonth(new Date().toISOString().slice(0, 7));
-                setSearchQuery('');
-                setSortField('name');
-                setSortOrder('asc');
-              }}
-              className="button-secondary flex items-center"
-            >
-              <ArrowPathIcon className="w-5 h-5 mr-2" />
-              Clear Filters
-            </button>
-            <button
-              onClick={() => toggleSort('name')}
-              className="button-secondary flex items-center"
-            >
-              Sort by Name
-              {sortField === 'name' && (
-                sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
-              )}
-            </button>
-            <button
-              onClick={() => toggleSort('category')}
-              className="button-secondary flex items-center"
-            >
-              Sort by Category
-              {sortField === 'category' && (
-                sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
-              )}
-            </button>
-            <button
-              onClick={() => toggleSort('location')}
-              className="button-secondary flex items-center"
-            >
-              Sort by Location
-              {sortField === 'location' && (
-                sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
-              )}
-            </button>
-            <button
-              onClick={() => toggleSort('quantity')}
-              className="button-secondary flex items-center"
-            >
-              Sort by Quantity
-              {sortField === 'quantity' && (
-                sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        {isFormOpen && (
+        {isInventoryFormOpen && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="card w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-4">
-                {editingProduct ? 'Edit Product' : 'Add New Product'}
-              </h2>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <h2 className="text-xl font-semibold mb-4">Create New Inventory</h2>
+              <form onSubmit={handleInventorySubmit} className="space-y-4">
                 <div>
-                  <label className="label">Name *</label>
+                  <label className="label">Inventory Name *</label>
                   <input
                     type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    value={inventoryFormData.name}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, name: e.target.value })}
                     className="input-field"
                     required
                   />
                 </div>
                 <div>
-                  <label className="label">Category</label>
-                  <div className="flex gap-2">
-                    <select
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="input-field flex-1"
-                    >
-                      <option value="">Select a category</option>
-                      {categories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        placeholder="New category"
-                        className="input-field w-32"
-                      />
-                      <button
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="button-secondary whitespace-nowrap"
-                      >
-                        Add
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div>
-                  <label className="label">Location</label>
-                  <input
-                    type="text"
-                    value={formData.location}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="input-field"
-                    placeholder="Enter location"
-                  />
-                </div>
-                <div>
-                  <label className="label">Unit</label>
+                  <label className="label">Store Name *</label>
                   <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ 
-                      ...formData, 
-                      unit: e.target.value as Product['unit'],
-                      quantityPerBox: 0,
-                      boxUnit: 'unidade'
-                    })}
+                    value={inventoryFormData.storeName}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, storeName: e.target.value })}
                     className="input-field"
+                    required
                   >
-                    <option value="unidade">Unidade</option>
-                    <option value="cx">Caixa (CX)</option>
-                    <option value="kg">Kilograma (KG)</option>
-                    <option value="l">Litro (L)</option>
-                    <option value="barril">Barril</option>
+                    <option value="">Select a store</option>
+                    {stores.map((store) => (
+                      <option key={store} value={store}>
+                        {store}
+                      </option>
+                    ))}
                   </select>
                 </div>
-                {formData.unit === 'cx' && (
-                  <>
-                    <div>
-                      <label className="label">Box Unit</label>
-                      <select
-                        value={formData.boxUnit}
-                        onChange={(e) => setFormData({ ...formData, boxUnit: e.target.value || 'unidade' })}
-                        className="input-field"
-                      >
-                        <option value="unidade">Unidade</option>
-                        <option value="kg">Kilograma (KG)</option>
-                        <option value="l">Litro (L)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="label">Quantity per Box</label>
-                      <input
-                        type="number"
-                        min="0"
-                        value={formData.quantityPerBox || ''}
-                        onChange={(e) => setFormData({ ...formData, quantityPerBox: Number(e.target.value) || 0 })}
-                        className="input-field"
-                        placeholder={`Enter quantity per box in ${formData.boxUnit}`}
-                        step={formData.boxUnit === 'l' ? "0.01" : "1"}
-                      />
-                    </div>
-                  </>
-                )}
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsFormOpen(false);
-                      setEditingProduct(null);
-                      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '', storeName: '' });
-                    }}
-                    className="button-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="button-primary"
-                  >
-                    {editingProduct ? 'Update' : 'Add'}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {isQuantityFormOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="card w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-4">Update Quantity</h2>
-              <div className="mb-4">
-                <p className="text-sm">Product: {selectedProduct.name}</p>
-                <p className="text-sm">Current Quantity: {selectedProduct.currentQuantity}</p>
-                <p className="text-sm">Unit: {selectedProduct.unit}</p>
-              </div>
-              <form onSubmit={handleQuantitySubmit} className="space-y-4">
                 <div>
-                  <label className="label">Add Quantity</label>
+                  <label className="label">Date *</label>
                   <input
-                    type="number"
-                    value={quantityData.quantity || ''}
-                    onChange={(e) => setQuantityData({ quantity: Number(e.target.value) || 0 })}
+                    type="date"
+                    value={inventoryFormData.date}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, date: e.target.value })}
                     className="input-field"
-                    placeholder="Enter quantity to add"
                     required
+                    max={new Date().toISOString().slice(0, 10)}
                   />
                 </div>
-                <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsQuantityFormOpen(false);
-                      setSelectedProduct(null);
-                      setQuantityData({ quantity: 0 });
-                    }}
-                    className="button-secondary"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="button-primary"
-                  >
-                    Update
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {isQuickAddOpen && selectedProduct && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="card w-full max-w-md">
-              <h2 className="text-xl font-semibold mb-4">Quick Add Quantity</h2>
-              <div className="mb-4">
-                <p className="text-sm">Product: {selectedProduct.name}</p>
-                <p className="text-sm">Current Quantity: {selectedProduct.currentQuantity}</p>
-                <p className="text-sm">Unit: {selectedProduct.unit}</p>
-                {selectedProduct.unit === 'cx' && selectedProduct.quantityPerBox && (
-                  <p className="text-sm">Quantity per Box: {selectedProduct.quantityPerBox} {selectedProduct.boxUnit}</p>
-                )}
-              </div>
-              <form onSubmit={handleQuickAddSubmit} className="space-y-4">
-                {selectedProduct.unit === 'cx' && selectedProduct.quantityPerBox && (
-                  <div>
-                    <label className="label">Boxes</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={quickAddData.boxes || ''}
-                      onChange={(e) => setQuickAddData({ ...quickAddData, boxes: Number(e.target.value) || 0 })}
-                      className="input-field"
-                      placeholder={`Enter number of boxes (${selectedProduct.quantityPerBox} ${selectedProduct.boxUnit} each)`}
-                    />
-                  </div>
-                )}
                 <div>
-                  <label className="label">
-                    {selectedProduct.unit === 'cx' ? `Additional ${selectedProduct.boxUnit}` : selectedProduct.unit}
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={quickAddData.units || ''}
-                    onChange={(e) => setQuickAddData({ ...quickAddData, units: Number(e.target.value) || 0 })}
+                  <label className="label">Description</label>
+                  <textarea
+                    value={inventoryFormData.description}
+                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, description: e.target.value })}
                     className="input-field"
-                    placeholder={`Enter additional ${selectedProduct.unit === 'cx' ? selectedProduct.boxUnit : selectedProduct.unit}`}
+                    rows={3}
                   />
                 </div>
-                {selectedProduct.unit === 'cx' && selectedProduct.quantityPerBox && (
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    Total {selectedProduct.boxUnit} to add: {(quickAddData.boxes * selectedProduct.quantityPerBox) + quickAddData.units}
-                  </div>
-                )}
                 <div className="flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsQuickAddOpen(false);
-                      setSelectedProduct(null);
-                      setQuickAddData({ boxes: 0, units: 0 });
-                    }}
-                    className="button-secondary"
-                  >
-                    Cancel
-                  </button>
                   <button
                     type="submit"
                     className="button-primary"
                   >
-                    Update
+                    Create Inventory
                   </button>
                 </div>
               </form>
@@ -626,72 +250,116 @@ export default function Home() {
           </div>
         )}
 
-        <div className="space-y-4">
-          {filteredProducts.map((product) => (
-            <div key={product._id} className="card">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-4">
-                    <h3 className="text-lg font-semibold">{product.name}</h3>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">({product.category})</span>
-                  </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{product.location}</p>
-                  <div className="mt-2 space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Unit:</span>
-                      <span className="text-sm font-medium">{product.unit}</span>
-                    </div>
-                    {product.unit === 'cx' && (
-                      <div className="flex justify-between">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">Quantity per Box:</span>
-                        <span className="text-sm font-medium">{product.quantityPerBox} {product.boxUnit}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between">
-                      <span className="text-sm text-gray-500 dark:text-gray-400">Current Quantity:</span>
-                      <span className="text-sm font-medium">
-                        {product.currentQuantity} {product.unit === 'cx' ? (product.boxUnit || 'unidade') : product.unit}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4 ml-4">
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={() => handleQuickAdd(product)}
-                      className="button-primary flex items-center"
-                    >
-                      <PlusCircleIcon className="w-5 h-5 mr-2" />
-                      Quick Add
-                    </button>
-                    <button
-                      onClick={() => handleAddQuantity(product)}
-                      className="button-secondary flex items-center"
-                    >
-                      <PlusCircleIcon className="w-5 h-5 mr-2" />
-                      Add Units
-                    </button>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
-                      >
-                        <PencilIcon className="w-5 h-5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product._id)}
-                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
-                      >
-                        <TrashIcon className="w-5 h-5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+        {selectedInventory && (
+          <>
+            <div className="card mb-6">
+              <h2 className="text-xl font-semibold mb-2">{selectedInventory.name}</h2>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Store: {selectedInventory.storeName} | Date: {new Date(selectedInventory.date).toLocaleDateString()}
+              </p>
+            </div>
+
+            <div className="mb-6 space-y-4">
+              <div className="relative">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="input-field pl-10"
+                />
+              </div>
+              <div className="flex flex-wrap gap-4">
+                <button
+                  onClick={() => toggleSort('name')}
+                  className="button-secondary flex items-center"
+                >
+                  Sort by Name
+                  {sortField === 'name' && (
+                    sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
+                  )}
+                </button>
+                <button
+                  onClick={() => toggleSort('category')}
+                  className="button-secondary flex items-center"
+                >
+                  Sort by Category
+                  {sortField === 'category' && (
+                    sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
+                  )}
+                </button>
+                <button
+                  onClick={() => toggleSort('location')}
+                  className="button-secondary flex items-center"
+                >
+                  Sort by Location
+                  {sortField === 'location' && (
+                    sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
+                  )}
+                </button>
+                <button
+                  onClick={() => toggleSort('quantity')}
+                  className="button-secondary flex items-center"
+                >
+                  Sort by Quantity
+                  {sortField === 'quantity' && (
+                    sortOrder === 'asc' ? <ArrowUpIcon className="w-4 h-4 ml-1" /> : <ArrowDownIcon className="w-4 h-4 ml-1" />
+                  )}
+                </button>
               </div>
             </div>
-          ))}
-        </div>
-    </div>
+
+            <div className="space-y-4">
+              {filteredProducts.map((product) => (
+                <div key={product._id} className="card">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-4">
+                        <h3 className="text-lg font-semibold">{product.name}</h3>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">({product.category})</span>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{product.location}</p>
+                      <div className="mt-2 space-y-1">
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Unit:</span>
+                          <span className="text-sm font-medium">{product.unit}</span>
+                        </div>
+                        {product.unit === 'cx' && (
+                          <div className="flex justify-between">
+                            <span className="text-sm text-gray-500 dark:text-gray-400">Quantity per Box:</span>
+                            <span className="text-sm font-medium">{product.quantityPerBox} {product.boxUnit}</span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">Current Quantity:</span>
+                          <span className="text-sm font-medium">
+                            {product.currentQuantity} {product.unit === 'cx' ? (product.boxUnit || 'unidade') : product.unit}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4 ml-4">
+                      <button
+                        onClick={() => {
+                          const quantity = prompt('Enter quantity to add:');
+                          if (quantity) {
+                            handleAddProductToInventory(product, Number(quantity));
+                          }
+                        }}
+                        className="button-primary flex items-center"
+                      >
+                        <PlusCircleIcon className="w-5 h-5 mr-2" />
+                        Add to Inventory
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </main>
   );
 }
