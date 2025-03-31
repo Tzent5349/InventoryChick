@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import connectDB from '../../../lib/mongodb';
-import Inventory from '../../../models/Inventory';
+import Inventory from '../../../app/models/Inventory';
 
 export async function GET() {
   try {
@@ -23,9 +23,9 @@ export async function POST(request: Request) {
     await connectDB();
     const data = await request.json();
     
-    if (!data.name || !data.date) {
+    if (!data.name || !data.storeName || !data.date) {
       return NextResponse.json(
-        { error: 'Missing required fields', details: 'Name and date are required' },
+        { error: 'Missing required fields', details: 'Name, store name, and date are required' },
         { status: 400 }
       );
     }
