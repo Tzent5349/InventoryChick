@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { SunIcon, MoonIcon, ArrowLeftIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ArrowLeftIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon, HomeIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../components/ThemeProvider';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
@@ -39,6 +39,8 @@ export default function Dashboard() {
   const [categoryTotals, setCategoryTotals] = useState<CategoryTotal[]>([]);
   const [sortField, setSortField] = useState<SortField>('category');
   const [sortOrder, setSortOrder] = useState<SortOrder>('asc');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     fetchProducts();
@@ -126,22 +128,38 @@ export default function Dashboard() {
     <main className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">Dashboard</h1>
           <div className="flex items-center space-x-4">
-            <Link href="/" className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
-              <ArrowLeftIcon className="w-6 h-6" />
+            <button
+              onClick={() => {
+                setSelectedCategory('all');
+                setSortField('category');
+                setSortOrder('asc');
+                setSearchQuery('');
+              }}
+              className="button-secondary flex items-center"
+            >
+              <ArrowPathIcon className="w-5 h-5 mr-2" />
+              Clear Filters
+            </button>
+            <Link
+              href="/"
+              className="button-secondary flex items-center"
+            >
+              <HomeIcon className="w-5 h-5 mr-2" />
+              Home
             </Link>
-            <h1 className="text-3xl font-bold">Dashboard</h1>
+            <button
+              onClick={toggleTheme}
+              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            >
+              {theme === 'light' ? (
+                <MoonIcon className="w-6 h-6" />
+              ) : (
+                <SunIcon className="w-6 h-6" />
+              )}
+            </button>
           </div>
-          <button
-            onClick={toggleTheme}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-          >
-            {theme === 'light' ? (
-              <MoonIcon className="w-6 h-6" />
-            ) : (
-              <SunIcon className="w-6 h-6" />
-            )}
-          </button>
         </div>
 
         <div className="mb-6 flex flex-wrap gap-4">

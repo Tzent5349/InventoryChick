@@ -39,14 +39,15 @@ const productSchema = new mongoose.Schema({
     type: String,
     default: 'Unspecified',
   },
-  createdAt: {
+  storeName: {
+    type: String,
+  },
+  lastUpdated: {
     type: Date,
     default: Date.now,
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now,
-  },
+}, {
+  timestamps: true
 });
 
 // Update the updatedAt timestamp before saving

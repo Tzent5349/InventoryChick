@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, PlusCircleIcon, SunIcon, MoonIcon, MagnifyingGlassIcon, ChartBarIcon, ArrowUpIcon, ArrowDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PencilIcon, TrashIcon, PlusCircleIcon, SunIcon, MoonIcon, MagnifyingGlassIcon, ChartBarIcon, ArrowUpIcon, ArrowDownIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useTheme } from './components/ThemeProvider';
 import Link from 'next/link';
@@ -16,6 +16,8 @@ interface Product {
   currentQuantity: number;
   category: string;
   location: string;
+  storeName?: string;
+  lastUpdated?: Date;
 }
 
 type SortField = 'name' | 'category' | 'location' | 'quantity';
@@ -28,6 +30,9 @@ export default function Home() {
   const [isQuantityFormOpen, setIsQuantityFormOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7));
+  const [selectedStore, setSelectedStore] = useState<string>('all');
+  const [stores, setStores] = useState<string[]>([]);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
   const [newCategory, setNewCategory] = useState('');
@@ -38,6 +43,7 @@ export default function Home() {
     boxUnit: 'unidade',
     category: '',
     location: '',
+    storeName: '',
   });
   const [quantityData, setQuantityData] = useState({
     quantity: 0,
@@ -56,9 +62,11 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // Extract unique categories from products
+    // Extract unique categories and stores from products
     const uniqueCategories = Array.from(new Set(products.map(product => product.category)));
+    const uniqueStores = Array.from(new Set(products.map(product => product.storeName || 'Uncategorized')));
     setCategories(uniqueCategories);
+    setStores(uniqueStores);
   }, [products]);
 
   const fetchProducts = async () => {
@@ -99,7 +107,7 @@ export default function Home() {
       }
       setIsFormOpen(false);
       setEditingProduct(null);
-      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '' });
+      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '', storeName: '' });
       fetchProducts();
     } catch (error) {
       toast.error('Failed to save product');
@@ -151,6 +159,7 @@ export default function Home() {
       boxUnit: product.boxUnit || 'unidade',
       category: product.category,
       location: product.location,
+      storeName: product.storeName || '',
     });
     setIsFormOpen(true);
   };
@@ -212,6 +221,12 @@ export default function Home() {
 
   const filteredProducts = products
     .filter(product => selectedCategory === 'all' || product.category === selectedCategory)
+    .filter(product => selectedStore === 'all' || product.storeName === selectedStore)
+    .filter(product => {
+      if (!product.lastUpdated) return true;
+      const productMonth = new Date(product.lastUpdated).toISOString().slice(0, 7);
+      return productMonth === selectedMonth;
+    })
     .filter(product => 
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -295,6 +310,38 @@ export default function Home() {
                 </option>
               ))}
             </select>
+            <select
+              value={selectedStore}
+              onChange={(e) => setSelectedStore(e.target.value)}
+              className="input-field max-w-xs"
+            >
+              <option value="all">All Stores</option>
+              {stores.map((store) => (
+                <option key={store} value={store}>
+                  {store}
+                </option>
+              ))}
+            </select>
+            <input
+              type="month"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(e.target.value)}
+              className="input-field max-w-xs"
+            />
+            <button
+              onClick={() => {
+                setSelectedCategory('all');
+                setSelectedStore('all');
+                setSelectedMonth(new Date().toISOString().slice(0, 7));
+                setSearchQuery('');
+                setSortField('name');
+                setSortOrder('asc');
+              }}
+              className="button-secondary flex items-center"
+            >
+              <ArrowPathIcon className="w-5 h-5 mr-2" />
+              Clear Filters
+            </button>
             <button
               onClick={() => toggleSort('name')}
               className="button-secondary flex items-center"
@@ -447,7 +494,7 @@ export default function Home() {
                     onClick={() => {
                       setIsFormOpen(false);
                       setEditingProduct(null);
-                      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '' });
+                      setFormData({ name: '', unit: 'unidade', quantityPerBox: 0, boxUnit: 'unidade', category: '', location: '', storeName: '' });
                     }}
                     className="button-secondary"
                   >
