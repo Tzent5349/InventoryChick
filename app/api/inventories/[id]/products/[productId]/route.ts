@@ -12,14 +12,21 @@ interface InventoryProduct {
   notes?: string;
 }
 
+type Props = {
+  params: {
+    id: string;
+    productId: string;
+  };
+};
+
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string; productId: string } }
+  props: Props
 ) {
   try {
     await connectDB();
     const { quantity, notes, action } = await request.json();
-    const { id, productId } = params;
+    const { id, productId } = props.params;
 
     if (quantity < 0) {
       return NextResponse.json(
