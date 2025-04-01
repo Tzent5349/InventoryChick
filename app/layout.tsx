@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
@@ -7,9 +7,17 @@ import React from "react";
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  themeColor: '#000000',
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
+
 export const metadata: Metadata = {
-  title: "Inventory Manager",
-  description: "Manage your inventory with ease",
+  title: "Inventory Management System",
+  description: "A comprehensive inventory management system for tracking products and stock levels.",
   manifest: "/manifest.json",
   themeColor: "#3b82f6",
   appleWebApp: {

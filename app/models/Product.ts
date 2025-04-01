@@ -1,5 +1,20 @@
 import mongoose from 'mongoose';
 
+const quantityHistorySchema = new mongoose.Schema({
+  storeName: {
+    type: String,
+    required: true
+  },
+  date: {
+    type: Date,
+    required: true
+  },
+  quantity: {
+    type: Number,
+    required: true
+  }
+});
+
 const productSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -48,6 +63,7 @@ const productSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  quantityHistory: [quantityHistorySchema],
   category: {
     type: String,
     default: 'Uncategorized',
