@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import connectDB from '@/lib/mongodb';
 import Inventory from '@/app/models/Inventory';
 
@@ -11,7 +11,7 @@ interface InventoryProduct {
 }
 
 export async function POST(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -66,7 +66,7 @@ export async function POST(
 }
 
 export async function DELETE(
-  request: Request,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -98,7 +98,7 @@ export async function DELETE(
   } catch (error) {
     console.error('DELETE /api/inventories/[id]/products error:', error);
     return NextResponse.json(
-      { error: 'Failed to remove product from inventory', details: error instanceof Error ? error.message : 'Unknown error' },
+      { error: 'Failed to remove product from inventory' },
       { status: 500 }
     );
   }

@@ -9,32 +9,23 @@ export async function GET(
   try {
     console.log('Connecting to MongoDB...');
     await connectDB();
-    console.log('Connected to MongoDB, fetching inventory with ID:', params.id);
     
-    const inventory = await Inventory.findById(params.id).populate('products.productId');
+    // Await params before using them
+    const { id } = await params;
+    console.log('Connected to MongoDB, fetching inventory with ID:', id);
+    
+    const inventory = await Inventory.findById(id).populate('products.productId');
     console.log('Inventory found:', inventory ? 'Yes' : 'No');
     
     if (!inventory) {
-      return NextResponse.json(
-        { error: 'Inventory not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'Inventory not found' }, { status: 404 });
     }
 
     return NextResponse.json(inventory);
   } catch (error) {
-    console.error('GET /api/inventories/[id] error details:', {
-      message: error instanceof Error ? error.message : 'Unknown error',
-      stack: error instanceof Error ? error.stack : undefined,
-      error: error
-    });
-    
+    console.error('Error fetching inventory:', error);
     return NextResponse.json(
-      { 
-        error: 'Failed to fetch inventory', 
-        details: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
-      },
+      { error: 'Failed to fetch inventory' },
       { status: 500 }
     );
   }
